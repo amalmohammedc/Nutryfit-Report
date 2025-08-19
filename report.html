@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Health Report - Nutryfit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom Nutryfit Green Colors */
+        .nutryfit-dark-green { color: #2a552a; }
+        .nutryfit-light-green { color: #5a8b5a; }
+        .bg-nutryfit-dark-green { background-color: #2a552a; }
+        .bg-nutryfit-light-green { background-color: #5a8b5a; }
+        .hover\:bg-nutryfit-darker-green:hover { background-color: #214221; }
+
+        .tab.active {
+            background-color: #2a552a;
+            color: white;
+        }
+        /* Modal styles */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .modal-active {
+            display: flex;
+        }
+        /* Spinner */
+        .loader {
+            border-top-color: #5a8b5a;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Custom styles for the range slider */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #2a552a;
+            cursor: pointer;
+            border-radius: 50%;
+            margin-top: -6px;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #2a552a;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        /* Remove spinners from number inputs */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        /* Print Styles */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-friendly {
+                box-shadow: none !important;
+                max-width: 100% !important;
+                border: 1px solid #ccc;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-6 md:p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden print-friendly">
+        <!-- Header -->
+        <header class="bg-nutryfit-dark-green text-white p-6 text-center relative">
+            <h1 class="text-2xl md:text-3xl font-bold">Nutryfit Health Report</h1>
+            <button id="print-button" class="no-print absolute top-4 right-4 bg-white text-nutryfit-dark-green font-bold py-2 px-4 rounded-full text-sm hover:bg-gray-200 transition">
+                🖨️ Print
+            </button>
+        </header>
+
+        <main class="p-6 md:p-8 space-y-8">
+            <!-- Body Composition Analysis -->
+            <section id="bmi-analysis">
+                <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Body Composition</h2>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
+                    <!-- Left Stats -->
+                    <div class="md:col-span-2 space-y-3 text-gray-700">
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <label for="name-input" class="font-medium">Name:</label>
+                            <input type="text" id="name-input" class="w-2/3 text-right font-bold nutryfit-dark-green bg-transparent border-0 focus:ring-0 p-0" value="Client">
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <label for="age-input" class="font-medium">Age:</label>
+                            <input type="number" id="age-input" class="w-2/3 text-right font-bold nutryfit-dark-green bg-transparent border-0 focus:ring-0 p-0" value="35">
+                        </div>
+                    </div>
+                    <!-- Right Interactive BMI -->
+                    <div class="md:col-span-3 bg-gray-50 p-4 rounded-lg">
+                        <div class="grid grid-cols-2 gap-4 text-center mb-4 no-print">
+                            <div>
+                                <label for="weight-slider" class="block font-medium text-gray-700 mb-2">Weight</label>
+                                <input type="range" id="weight-slider" min="40" max="120" value="87" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <div class="text-2xl font-bold nutryfit-dark-green mt-2"><span id="weight-value">87</span> kg</div>
+                            </div>
+                            <div>
+                                <label for="height-slider" class="block font-medium text-gray-700 mb-2">Height</label>
+                                <input type="range" id="height-slider" min="140" max="200" value="164" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <div class="text-2xl font-bold nutryfit-dark-green mt-2"><span id="height-value">164</span> cm</div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center p-4 rounded-lg" id="bmi-result-bg">
+                            <p class="text-sm font-medium" id="bmi-category-text">Obese Class I</p>
+                            <p class="text-4xl font-bold" id="bmi-value-text">32.3</p>
+                            <p class="text-xs">Body Mass Index (BMI)</p>
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 relative">
+                                <div class="bg-blue-500 h-2.5 rounded-l-full" style="width: 21.25%"></div>
+                                <div class="bg-nutryfit-light-green h-2.5 absolute top-0" style="left: 21.25%; width: 27.5%"></div>
+                                <div class="bg-orange-500 h-2.5 absolute top-0" style="left: 48.75%; width: 12.5%"></div>
+                                <div class="bg-red-500 h-2.5 rounded-r-full absolute top-0" style="left: 61.25%; width: 38.75%"></div>
+                                <div id="bmi-marker" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-white border-2 border-gray-800 rounded-full no-print" style="left: 70.75%;"></div>
+                            </div>
+                            <div class="flex justify-between text-xs mt-1 px-1">
+                                <span>16</span><span>18.5</span><span>25</span><span>30</span><span>40</span>
+                            </div>
+                        </div>
+
+                        <div id="advice-box" class="mt-4 p-3 rounded-lg transition-colors duration-300">
+                            <p id="weight-advice" class="text-center font-semibold"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Daily Calorie Needs -->
+            <section id="calorie-needs">
+                <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Daily Calorie Needs</h2>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <p class="text-center text-gray-600 mb-4">Your Basal Metabolic Rate (BMR) is <strong id="bmr-value" class="nutryfit-dark-green">1725 kcal/day</strong>. Select your activity level to estimate your total daily calorie needs.</p>
+                    <div id="activity-selector" class="flex flex-wrap justify-center gap-2 mb-6 no-print">
+                        <button class="tab active px-4 py-2 rounded-full text-sm font-medium transition" data-multiplier="1.2">Sedentary</button>
+                        <button class="tab bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium transition" data-multiplier="1.375">Lightly Active</button>
+                        <button class="tab bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium transition" data-multiplier="1.55">Moderately Active</button>
+                        <button class="tab bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium transition" data-multiplier="1.725">Very Active</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+                        <div class="bg-blue-100 p-4 rounded-lg"><h3 class="font-semibold text-blue-800">To Maintain Weight</h3><p id="maintain-calories" class="text-3xl font-bold text-blue-900">2070</p><p class="text-sm text-blue-700">kcal / day</p></div>
+                        <div class="bg-green-100 p-4 rounded-lg"><h3 class="font-semibold text-green-800">For Weight Loss (~0.5 kg/week)</h3><p id="loss-calories" class="text-3xl font-bold text-green-900">1570</p><p class="text-sm text-green-700">kcal / day</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI-Powered Health Assistant -->
+            <section id="gemini-assistant" class="no-print">
+                <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">✨ AI-Powered Health Assistant</h2>
+                <div class="bg-gray-50 p-6 rounded-lg text-center">
+                    <p class="text-gray-600 mb-4">Get personalized meal and workout ideas to help you reach your goals.</p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button id="generate-meal-plan" class="bg-nutryfit-light-green hover:bg-nutryfit-darker-green text-white font-bold py-2 px-4 rounded-full transition duration-300">✨ Generate 1-Day Meal Plan</button>
+                        <button id="generate-workout-plan" class="bg-nutryfit-light-green hover:bg-nutryfit-darker-green text-white font-bold py-2 px-4 rounded-full transition duration-300">✨ Generate Weekly Workout Plan</button>
+                    </div>
+                    <div id="gemini-result" class="mt-6 p-4 bg-white rounded-lg text-left min-h-[100px] border border-gray-200">
+                        <p class="text-gray-500 text-center">Your personalized plans will appear here...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recommendations -->
+            <section id="recommendations">
+                <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">General Recommendations</h2>
+                <div class="space-y-4">
+                    <details class="group bg-green-50 p-4 rounded-lg cursor-pointer"><summary class="flex justify-between items-center font-semibold text-green-800">Dietary Recommendations<svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary><div class="mt-4 text-gray-700 space-y-2"><p><strong>Focus on Nutrient-Dense Foods:</strong> Prioritize whole foods like fruits, vegetables, lean proteins (chicken, fish, beans) and whole grains (oats, brown rice).</p><p><strong>Practice Portion Control:</strong> Use smaller plates and be mindful of serving sizes to avoid overeating.</p><p><strong>Stay Hydrated:</strong> Drink plenty of water throughout the day. Aim for 8-10 glasses. Avoid sugary drinks and juices.</p><p><strong>Limit Processed Foods:</strong> Reduce intake of foods high in sugar, unhealthy fats and sodium, such as fast food, packaged snacks and sweets.</p></div></details>
+                    <details class="group bg-green-50 p-4 rounded-lg cursor-pointer"><summary class="flex justify-between items-center font-semibold text-green-800">Exercise & Physical Activity<svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary><div class="mt-4 text-gray-700 space-y-2"><p><strong>Aerobic Exercise:</strong> Aim for at least <strong>150 minutes of moderate-intensity</strong> cardio per week. This includes activities like brisk walking, jogging, cycling or swimming.</p><p><strong>Strength Training:</strong> Incorporate strength training exercises 2-3 times per week. This builds muscle, which boosts your metabolism. You can use weights, resistance bands or your own body weight.</p><p><strong>Stay Consistent:</strong> Find activities you enjoy to make it easier to stick with a routine. Even small amounts of activity are better than none.</p><p><strong>Increase Daily Movement:</strong> Take the stairs, walk during phone calls or go for a short walk after meals to increase your overall activity level.</p></div></details>
+                    <details class="group bg-green-50 p-4 rounded-lg cursor-pointer"><summary class="flex justify-between items-center font-semibold text-green-800">Lifestyle Habits<svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary><div class="mt-4 text-gray-700 space-y-2"><p><strong>Prioritize Sleep:</strong> Aim for 7-9 hours of quality sleep per night. Poor sleep can affect hormones that regulate appetite.</p><p><strong>Manage Stress:</strong> Find healthy ways to cope with stress, such as meditation, deep breathing exercises, hobbies or spending time in nature.</p><p><strong>Be Patient & Consistent:</strong> Healthy weight loss is a gradual process. Focus on making sustainable changes rather than quick fixes.</p></div></details>
+                </div>
+            </section>
+        </main>
+
+        <footer class="bg-gray-100 p-4 text-center text-xs text-gray-500 border-t no-print"><p><strong>Disclaimer:</strong> This report provides general health and wellness information and is not a substitute for professional medical advice. Please consult with a doctor or a registered dietitian before starting any new diet or exercise program.</p></footer>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-60 items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl flex items-center space-x-4">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
+            <span class="text-lg font-medium text-gray-700">Generating your plan...</span>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- DOM Elements ---
+            const weightSlider = document.getElementById('weight-slider');
+            const heightSlider = document.getElementById('height-slider');
+            const ageInput = document.getElementById('age-input');
+            const weightValueEl = document.getElementById('weight-value');
+            const heightValueEl = document.getElementById('height-value');
+            const bmiValueTextEl = document.getElementById('bmi-value-text');
+            const bmiCategoryTextEl = document.getElementById('bmi-category-text');
+            const bmiResultBgEl = document.getElementById('bmi-result-bg');
+            const bmiMarkerEl = document.getElementById('bmi-marker');
+            const adviceBoxEl = document.getElementById('advice-box');
+            const weightAdviceEl = document.getElementById('weight-advice');
+            const bmrValueEl = document.getElementById('bmr-value');
+            const maintainCaloriesEl = document.getElementById('maintain-calories');
+            const lossCaloriesEl = document.getElementById('loss-calories');
+            const activitySelector = document.getElementById('activity-selector');
+            const printButton = document.getElementById('print-button');
+
+            // --- Main Update Function ---
+            function updateReport() {
+                const weight = parseInt(weightSlider.value);
+                const heightCm = parseInt(heightSlider.value);
+                const age = parseInt(ageInput.value) || 35; // Fallback age
+                const heightM = heightCm / 100;
+
+                updateBmiSection(weight, heightM, heightCm);
+                updateCaloriesSection(weight, heightCm, age);
+            }
+
+            // --- Update BMI Section ---
+            function updateBmiSection(weight, heightM, heightCm) {
+                const bmi = weight / (heightM * heightM);
+                let category, bgColor, textColor;
+
+                // Determine category and colors
+                if (bmi < 18.5) {
+                    category = 'Underweight'; bgColor = 'bg-blue-100'; textColor = 'text-blue-800';
+                } else if (bmi < 25) {
+                    category = 'Normal'; bgColor = 'bg-green-100'; textColor = 'text-green-800';
+                } else if (bmi < 30) {
+                    category = 'Overweight'; bgColor = 'bg-orange-100'; textColor = 'text-orange-800';
+                } else {
+                    category = 'Obese'; bgColor = 'bg-red-100'; textColor = 'text-red-800';
+                }
+
+                // Update UI text and colors
+                weightValueEl.textContent = weight;
+                heightValueEl.textContent = heightCm;
+                bmiValueTextEl.textContent = bmi.toFixed(1);
+                bmiCategoryTextEl.textContent = category;
+                bmiResultBgEl.className = `text-center p-4 rounded-lg ${bgColor} ${textColor}`;
+
+                // Update marker position
+                const bmiRange = 40 - 16;
+                const percent = Math.max(0, Math.min(100, ((bmi - 16) / bmiRange) * 100));
+                bmiMarkerEl.style.left = `${percent}%`;
+
+                // Update healthy weight advice
+                const healthyWeightMin = 18.5 * (heightM * heightM);
+                const healthyWeightMax = 24.9 * (heightM * heightM);
+                
+                if (weight > healthyWeightMax) {
+                    const weightLossNeeded = weight - healthyWeightMax;
+                    adviceBoxEl.className = 'mt-4 p-3 rounded-lg bg-red-100';
+                    weightAdviceEl.className = 'text-center font-semibold text-red-800';
+                    weightAdviceEl.innerHTML = `To reach a healthy weight, a loss of <span class="font-bold">${weightLossNeeded.toFixed(0)} kg</span> is recommended.`;
+                } else if (weight < healthyWeightMin) {
+                    const weightGainNeeded = healthyWeightMin - weight;
+                    adviceBoxEl.className = 'mt-4 p-3 rounded-lg bg-blue-100';
+                    weightAdviceEl.className = 'text-center font-semibold text-blue-800';
+                    weightAdviceEl.innerHTML = `To reach a healthy weight, a gain of <span class="font-bold">${weightGainNeeded.toFixed(0)} kg</span> is recommended.`;
+                } else {
+                    adviceBoxEl.className = 'mt-4 p-3 rounded-lg bg-green-100';
+                    weightAdviceEl.className = 'text-center font-semibold text-green-800';
+                    weightAdviceEl.innerHTML = `You are within a healthy weight range. Keep it up!`;
+                }
+            }
+
+            // --- Update Calories Section ---
+            function updateCaloriesSection(weight, heightCm, age) {
+                // Mifflin-St Jeor Equation for BMR (men)
+                const bmr = Math.round((10 * weight) + (6.25 * heightCm) - (5 * age) + 5);
+                bmrValueEl.textContent = `${bmr} kcal/day`;
+
+                const activeTab = activitySelector.querySelector('.tab.active');
+                const multiplier = parseFloat(activeTab.dataset.multiplier);
+                
+                const maintain = Math.round(bmr * multiplier);
+                const loss = maintain - 500;
+                maintainCaloriesEl.textContent = maintain;
+                lossCaloriesEl.textContent = loss;
+            }
+
+            // --- Event Listeners ---
+            weightSlider.addEventListener('input', updateReport);
+            heightSlider.addEventListener('input', updateReport);
+            ageInput.addEventListener('input', updateReport);
+            printButton.addEventListener('click', () => window.print());
+            activitySelector.addEventListener('click', function(e) {
+                if (e.target.classList.contains('tab')) {
+                    activitySelector.querySelectorAll('.tab').forEach(tab => {
+                        tab.classList.remove('active');
+                        tab.classList.add('bg-gray-200', 'text-gray-700');
+                    });
+                    e.target.classList.add('active');
+                    e.target.classList.remove('bg-gray-200', 'text-gray-700');
+                    updateReport(); // Recalculate calories on activity change
+                }
+            });
+            
+            // Initial call to populate all fields
+            updateReport();
+
+            // --- Gemini API Integration ---
+            const mealPlanBtn = document.getElementById('generate-meal-plan');
+            const workoutPlanBtn = document.getElementById('generate-workout-plan');
+            const geminiResultEl = document.getElementById('gemini-result');
+            const loadingModal = document.getElementById('loading-modal');
+
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=`; // API key is handled by the environment
+
+            async function callGeminiAPI(prompt, retries = 3, delay = 1000) {
+                loadingModal.classList.remove('hidden');
+                loadingModal.classList.add('modal-active');
+                geminiResultEl.innerHTML = '<p class="text-gray-500 text-center">Generating...</p>';
+
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const result = await response.json();
+                        
+                        if (result.candidates?.[0]?.content?.parts?.[0]) {
+                            const text = result.candidates[0].content.parts[0].text;
+                            geminiResultEl.innerHTML = text.replace(/\n/g, '<br>'); // Basic formatting
+                        } else {
+                            throw new Error('Invalid response structure from API.');
+                        }
+                        
+                        loadingModal.classList.add('hidden');
+                        loadingModal.classList.remove('modal-active');
+                        return; // Success
+                    } catch (error) {
+                        console.error(`Attempt ${i + 1} failed:`, error);
+                        if (i === retries - 1) {
+                            geminiResultEl.innerHTML = `<p class="text-red-500 text-center">Sorry, something went wrong. Please try again later.</p>`;
+                            loadingModal.classList.add('hidden');
+                            loadingModal.classList.remove('modal-active');
+                        } else {
+                            await new Promise(res => setTimeout(res, delay));
+                            delay *= 2; // Exponential backoff
+                        }
+                    }
+                }
+            }
+
+            mealPlanBtn.addEventListener('click', () => {
+                const calorieTarget = lossCaloriesEl.textContent;
+                const age = ageInput.value;
+                const prompt = `Generate a simple one-day meal plan for weight loss, totaling around ${calorieTarget} calories. The person is a ${age}-year-old male in India. Include breakfast, lunch, dinner, and one snack. Use common Indian food items. Format the response as simple HTML with <h4> for each meal and a <ul> with <li> for the food items. Do not include markdown like \`\`\`html.`;
+                callGeminiAPI(prompt);
+            });
+
+            workoutPlanBtn.addEventListener('click', () => {
+                const currentBmi = bmiValueTextEl.textContent;
+                const currentCategory = bmiCategoryTextEl.textContent;
+                const age = ageInput.value;
+                const prompt = `Generate a 5-day sample workout plan for a ${age}-year-old male beginner whose goal is weight loss. His current BMI is ${currentBmi} (${currentCategory}). The plan should include a mix of cardio and basic bodyweight strength training. Format the response as simple HTML with a <h4> for each day and a <ul> with <li> for the exercises. Do not include markdown like \`\`\`html.`;
+                callGeminiAPI(prompt);
+            });
+        });
+    </script>
+</body>
+</html>
